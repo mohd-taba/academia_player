@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:media_kit_video/media_kit_video.dart';
@@ -224,6 +226,7 @@ class YPlayerState extends State<YPlayer> with SingleTickerProviderStateMixin {
             const MaterialPositionIndicator(),
             const Spacer(),
             buildSpeedOption(),
+            SettingsButton(controller: _controller,),
             const MaterialFullscreenButton()
           ],
         ),
@@ -280,5 +283,134 @@ class YPlayerState extends State<YPlayer> with SingleTickerProviderStateMixin {
       // For any other state, show the placeholder or an empty container
       return widget.placeholder ?? Container();
     }
+  }
+  
+  
+  
+}
+
+/// stolen from podplayer
+ListTile _bottomSheetTiles({
+  required String title,
+  required IconData icon,
+  String? subText,
+  void Function()? onTap,
+}) {
+  return ListTile(
+    leading: Icon(icon),
+    onTap: onTap,
+    title: FittedBox(
+      fit: BoxFit.scaleDown,
+      alignment: Alignment.centerLeft,
+      child: Row(
+        children: [
+          Text(
+            title,
+          ),
+          if (subText != null) const SizedBox(width: 6),
+          if (subText != null)
+            const SizedBox(
+              height: 4,
+              width: 4,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: Colors.grey,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+          if (subText != null) const SizedBox(width: 6),
+          if (subText != null)
+            Text(
+              subText,
+              style: const TextStyle(color: Colors.grey),
+            ),
+        ],
+      ),
+    ),
+  );
+}
+
+MaterialVideoControlsThemeData _theme(BuildContext context) =>
+    FullscreenInheritedWidget.maybeOf(context) == null
+        ? MaterialVideoControlsTheme.maybeOf(context)?.normal ??
+        kDefaultMaterialVideoControlsThemeData
+        : MaterialVideoControlsTheme.maybeOf(context)?.fullscreen ??
+        kDefaultMaterialVideoControlsThemeDataFullscreen;
+
+class SettingsButton extends StatelessWidget {
+  final Color? iconColor;
+  final YPlayerController controller;
+  const SettingsButton({super.key, required this.controller, this.iconColor});
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      color: iconColor ?? _theme(context).buttonBarButtonColor,
+        onPressed: () {
+          showModalBottomSheet<void>(
+              context: context,
+              builder: (context) => SafeArea(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                        _bottomSheetTiles(
+                          title: "Quality",
+                          icon: Icons.video_settings_rounded,
+
+                          //subText: '${podCtr.vimeoPlayingVideoQuality}p',
+                          onTap: () {
+                            Navigator.of(context).pop();
+                            Timer(const Duration(milliseconds: 100), () {
+                              showModalBottomSheet<void>(
+                                context: context,
+                                builder: (context) => SafeArea(
+                                  child: _VideoQualitySelectorMob(
+                                    onTap: null,
+                                    controller: controller,
+                                  ),
+                                ),
+                              );
+                            });
+                            // await Future.delayed(
+                            //   const Duration(milliseconds: 100),
+                            // );
+                          },
+                        ),
+                    ],
+                  ),
+              ));
+        },
+        icon: Icon(Icons.settings));
+
+  }
+}
+
+class _VideoQualitySelectorMob extends StatelessWidget {
+  final YPlayerController controller;
+  final void Function()? onTap;
+
+  const _VideoQualitySelectorMob({
+    required this.onTap, required this.controller,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: controller.videosData
+            .map(
+              (e) => ListTile(
+            title: Text('${e.label}'),
+            onTap: () {
+              onTap != null ? onTap!() : Navigator.of(context).pop();
+              controller.changeQuality(e);
+            },
+          ),
+        )
+            .toList(),
+      ),
+    );
   }
 }

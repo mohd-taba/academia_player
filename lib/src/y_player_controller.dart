@@ -219,6 +219,7 @@ class YPlayerController {
     // Wait for a short duration to ensure the audio track is loaded
     await Future.delayed(const Duration(milliseconds: 500));
     await _player.seek(current);
+    await Future.delayed(const Duration(milliseconds: 250));
     await _player.play();
   }
   Future<void> changeVideo(ModernPlayerVideoData data) async {

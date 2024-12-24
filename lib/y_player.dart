@@ -8,3 +8,4 @@ export 'src/utils/y_player_default_exit_full_screen.dart';
 export 'src/y_player_controller.dart';
 export 'src/y_player_initializer.dart';
 export 'src/y_player_main.dart';
+export 'src/types/y_player_modern.dart';

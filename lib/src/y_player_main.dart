@@ -1,5 +1,7 @@
 import 'dart:async';
-
+import 'dart:developer';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:y_player/src/types/y_player_modern.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:media_kit_video/media_kit_video.dart';
@@ -58,12 +60,19 @@ class YPlayer extends StatefulWidget {
   /// The margin around the bottom button bar in fullscreen mode.
   final EdgeInsets? fullscreenBottomButtonBarMargin;
 
+  ///Video Playlist
+  final List<ModernPlayerVideoData>? videoList;
+
+  /// Video data to be viewed, eg. comments etc...
+  VideoData videoData = VideoData();
+
   /// Constructs a YPlayer widget.
   ///
   /// The [youtubeUrl] parameter is required and should be a valid YouTube video URL.
-  const YPlayer({
+  YPlayer({
     Key? key,
     required this.youtubeUrl,
+    required this.videoData,
     this.aspectRatio,
     this.autoPlay = true,
     this.placeholder,
@@ -78,7 +87,7 @@ class YPlayer extends StatefulWidget {
     this.seekBarMargin,
     this.fullscreenSeekBarMargin,
     this.bottomButtonBarMargin,
-    this.fullscreenBottomButtonBarMargin,
+    this.fullscreenBottomButtonBarMargin, this.videoList,
   }) : super(key: key);
 
   @override
@@ -155,20 +164,22 @@ class YPlayerState extends State<YPlayer> with SingleTickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // Calculate the player dimensions based on the available width and aspect ratio
-        final aspectRatio = widget.aspectRatio ?? 16 / 9;
-        final playerWidth = constraints.maxWidth;
-        final playerHeight = playerWidth / aspectRatio;
+    return Column(
+      children: [LayoutBuilder(
+        builder: (context, constraints) {
+          // Calculate the player dimensions based on the available width and aspect ratio
+          final aspectRatio = widget.aspectRatio ?? 16 / 9;
+          final playerWidth = constraints.maxWidth;
+          final playerHeight = playerWidth / aspectRatio;
 
-        return Container(
-          width: playerWidth,
-          height: playerHeight,
-          color: Colors.transparent,
-          child: _buildPlayerContent(playerWidth, playerHeight),
-        );
-      },
+          return Container(
+            width: playerWidth,
+            height: playerHeight,
+            color: Colors.transparent,
+            child: _buildPlayerContent(playerWidth, playerHeight),
+          );
+        },
+      ), widget.videoList != null ? Playlist(currentlyPlaying: widget.youtubeUrl, videos: widget.videoList!, controller: _controller) : const SizedBox()]
     );
   }
 
@@ -244,6 +255,7 @@ class YPlayerState extends State<YPlayer> with SingleTickerProviderStateMixin {
             const MaterialPositionIndicator(),
             const Spacer(),
             buildSpeedOption(),
+            SettingsButton(controller: _controller,),
             const MaterialFullscreenButton()
           ],
         ),
@@ -413,4 +425,85 @@ class _VideoQualitySelectorMob extends StatelessWidget {
       ),
     );
   }
+}
+
+class Playlist extends StatefulWidget {
+  final YPlayerController controller;
+  String currentlyPlaying;
+  List<ModernPlayerVideoData> videos = [];
+  VideoData videoData = VideoData();
+
+  Playlist(
+      {super.key, required this.currentlyPlaying, required this.videos, required this.controller});
+
+  @override
+  State<Playlist> createState() => _PlaylistState();
+}
+
+class _PlaylistState extends State<Playlist> {
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      alignment: Alignment.center,
+      margin: EdgeInsets.all(5.0),
+
+      decoration: BoxDecoration(
+          border: Border.all(color: Colors.pinkAccent, width: 2.0),
+          borderRadius: BorderRadius.all(Radius.circular(10.0))),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+          children: widget.videos
+              .map(
+                (e) {
+                  var videoId = _youtubeParser(e.source);
+                  String thumbnailUrl = (videoId == null) ? "" : "https://img.youtube.com/vi/${videoId}/default.jpg";
+                  return Container(
+                    decoration: BoxDecoration(
+                        border: Border.all(),
+                        color: e.source != widget.currentlyPlaying
+                            ? Theme.of(context).colorScheme.surface
+                            : Colors.pink[50],
+                        borderRadius: BorderRadius.all(Radius.circular(10.0))),
+                    margin: EdgeInsets.all(5.0),
+                    child: ListTile(
+                      leading: Container(
+                        decoration: BoxDecoration(
+                            border: Border(
+                                left: BorderSide(color: Colors.black),
+                                right: BorderSide(color: Colors.black))),
+                        child: CachedNetworkImage(
+                          imageUrl: thumbnailUrl,
+                          placeholder: (context, url) => SizedBox(
+                            child: Center(child: CircularProgressIndicator()),
+                            width: 120.0,
+                          ),
+                          errorWidget: (context, url, error) => Icon(Icons.error),
+                        ),
+                      ),
+                      title: Text(e.label),
+                      trailing: e.source != widget.currentlyPlaying
+                          ? Icon(Icons.play_arrow)
+                          : Text("Now playing"),
+                      onTap: () {
+                        setState(() {
+                          widget.controller.changeVideo(e);
+                          widget.currentlyPlaying = e.source;
+                        });
+                        },
+                    ),
+                  );
+                }).toList(),
+        ),
+    );
+  }
+}
+
+String? _youtubeParser(String url) {
+  final regExp = RegExp(
+      r'^.*((youtu.be/)|(v/)|(\/u/\w/)|(embed/)|(watch\?))\??v?=?([^#&?]*).*');
+  final match = regExp.firstMatch(url);
+  return (match != null && match.group(7)!.length == 11)
+      ? match.group(7)
+      : null;
 }

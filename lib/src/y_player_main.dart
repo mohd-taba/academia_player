@@ -488,6 +488,7 @@ class _PlaylistState extends State<Playlist> {
                       onTap: () {
                         setState(() {
                           widget.controller.changeVideo(e);
+
                           widget.currentlyPlaying = e.source;
                         });
                         },

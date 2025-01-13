@@ -289,7 +289,7 @@ class YPlayerState extends State<YPlayer> with SingleTickerProviderStateMixin {
     } else if (_controller.status == YPlayerStatus.error) {
       // If there was an error, show the error widget
       return Center(
-        child: widget.errorWidget ?? const Text('Error loading video'),
+        child: widget.errorWidget ?? const Text('Error loading video, check your internet connection'),
       );
     } else {
       // For any other state, show the placeholder or an empty container

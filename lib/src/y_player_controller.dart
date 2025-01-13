@@ -70,6 +70,7 @@ class YPlayerController {
     _setStatus(YPlayerStatus.loading);
     try {
       debugPrint('YPlayerController: Fetching video info for $youtubeUrl');
+      debugger();
       final video = await _yt.videos.get(youtubeUrl);
       final manifest = await _yt.videos.streamsClient.getManifest(video.id);
 
